@@ -6,6 +6,27 @@ class IdentifierNameRuleTests: XCTestCase {
         verifyRule(IdentifierNameRule.description)
     }
 
+    func testIdentifierNameIdentifiableProtocolConformance() {
+        let baseDescription = IdentifierNameRule.description
+        let nonTriggeringExamples = [
+            Example("""
+            struct TaproomAnnotation: Identifiable {
+                let id: UUID = UUID()
+            }
+            """)
+        ]
+        let triggeringExamples = [
+            Example("""
+            struct TaproomAnnotation {
+                ↓let id: UUID = UUID()
+            }
+            """)
+        ]
+        let description = baseDescription.with(nonTriggeringExamples: nonTriggeringExamples,
+                                               triggeringExamples: triggeringExamples)
+        verifyRule(description)
+    }
+
     func testIdentifierNameWithAllowedSymbols() {
         let baseDescription = IdentifierNameRule.description
         let nonTriggeringExamples = baseDescription.nonTriggeringExamples + [

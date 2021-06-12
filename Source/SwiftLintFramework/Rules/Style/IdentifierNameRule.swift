@@ -23,10 +23,23 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
         deprecatedAliases: ["variable_name"]
     )
 
-    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
-                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
+    public func validate(
+        file: SwiftLintFile,
+        kind: SwiftDeclarationKind,
+        dictionary: SourceKittenDictionary
+    ) -> [StyleViolation] {
         guard !dictionary.enclosedSwiftAttributes.contains(.override) else {
             return []
+        }
+
+        /// Determine if the particular variable declaration is
+        /// a valid conformance to the `Identifiable` protocol.
+        var isIdentifiableConformance = false
+        let isPotentialIdentifiableConformance = dictionary.name == "id" && kind == .varInstance
+        if isPotentialIdentifiableConformance {
+            let conformances = file.match(pattern: "Identifiable", with: [.typeidentifier])
+            /// TODO: Figure out how to find the enclosing type's info... 😵‍💫
+            /// 🤔... This almost is starting to feel like an analyzer rule
         }
 
         return validateName(dictionary: dictionary, kind: kind).map { name, offset in
@@ -50,10 +63,11 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
                     ]
                 }
 
-                if let severity = severity(forLength: name.count) {
+                if let severity = severity(forLength: name.count), !isIdentifiableConformance {
                     let reason = "\(type) name should be between " +
                         "\(configuration.minLengthThreshold) and " +
                         "\(configuration.maxLengthThreshold) characters long: '\(name)'"
+
                     return [
                         StyleViolation(ruleDescription: Self.description,
                                        severity: severity,
